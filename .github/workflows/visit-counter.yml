@@ -1,0 +1,38 @@
+name: Visitor Counter
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  update_counter:
+    runs-on: ubuntu-latest
+    if: github.event.issue.number == 2 && startsWith(github.event.comment.body, '📍 Nueva visita:')
+    
+    steps:
+      - uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issueNumber = 2;
+            const { owner, repo } = context.repo;
+            
+            const issue = await github.rest.issues.get({
+              owner,
+              repo,
+              issue_number: issueNumber
+            });
+
+            let count = 0;
+            const body = issue.data.body;
+            const match = body.match(/\*\*Visitas totales\*\*: (\d+)/);
+            if (match) count = parseInt(match[1]);
+
+            await github.rest.issues.update({
+              owner,
+              repo,
+              issue_number: issueNumber,
+              body: body.replace(
+                `**Visitas totales**: ${count}`,
+                `**Visitas totales**: ${count + 1}`
+              )
+            });
